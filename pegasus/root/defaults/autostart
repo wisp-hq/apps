@@ -1,0 +1,5 @@
+#!/usr/bin/env bash
+
+/usr/local/bin/discover-games
+
+exec /usr/bin/pegasus-fe

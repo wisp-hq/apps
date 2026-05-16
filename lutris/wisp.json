@@ -1,0 +1,27 @@
+{
+  "$schema": "../wisp.schema.json",
+  "slug": "lutris",
+  "name": "Lutris",
+  "description": "Linux game launcher with the Wine stack preinstalled.",
+  "image": "ghcr.io/wisp-hq/lutris:latest",
+  "icon": "icon.svg",
+  "mountFields": [
+    {
+      "key": "config",
+      "label": "Account & settings",
+      "scope": "perUser",
+      "placeholder": "lutris",
+      "mounts": [{ "containerPath": "/config", "mode": "rw" }],
+      "advanced": true
+    },
+    {
+      "key": "games",
+      "label": "Games library",
+      "description": "Shared install directory for Lutris games and Wine prefixes.",
+      "scope": "shared",
+      "placeholder": "/data/shared/lutris-games",
+      "mounts": [{ "containerPath": "/config/Games", "mode": "rw" }]
+    }
+  ],
+  "defaultEnvVars": { "TZ": "Europe/Paris" }
+}

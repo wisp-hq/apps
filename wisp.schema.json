@@ -1,0 +1,91 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://raw.githubusercontent.com/wisp-hq/apps/main/wisp.schema.json",
+  "title": "Wisp app manifest",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["slug", "name", "description", "image", "icon", "mountFields", "defaultEnvVars"],
+  "properties": {
+    "$schema": { "type": "string" },
+    "slug": {
+      "type": "string",
+      "pattern": "^[a-z0-9-]+$",
+      "description": "Must match the parent directory name."
+    },
+    "name": { "type": "string", "minLength": 1 },
+    "description": { "type": "string", "minLength": 1 },
+    "image": { "type": "string", "minLength": 1 },
+    "icon": { "type": "string", "minLength": 1 },
+    "mountFields": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/mountField" }
+    },
+    "defaultEnvVars": {
+      "type": "object",
+      "additionalProperties": { "type": "string" }
+    },
+    "shortcutProvider": { "$ref": "#/$defs/shortcutProvider" }
+  },
+  "$defs": {
+    "mountTarget": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["containerPath", "mode"],
+      "properties": {
+        "suffix": {
+          "type": "string",
+          "description": "Sub-path under the host path."
+        },
+        "containerPath": {
+          "type": "string",
+          "pattern": "^/"
+        },
+        "mode": { "enum": ["ro", "rw"] }
+      }
+    },
+    "mountField": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["key", "label", "scope", "placeholder", "mounts"],
+      "properties": {
+        "key": {
+          "type": "string",
+          "pattern": "^[a-z0-9-]+$"
+        },
+        "label": { "type": "string", "minLength": 1 },
+        "description": { "type": "string", "minLength": 1 },
+        "scope": { "enum": ["shared", "perUser"] },
+        "placeholder": { "type": "string", "minLength": 1 },
+        "mounts": {
+          "type": "array",
+          "minItems": 1,
+          "items": { "$ref": "#/$defs/mountTarget" }
+        },
+        "advanced": { "type": "boolean" }
+      }
+    },
+    "shortcutProvider": {
+      "type": "object",
+      "description": "Optional: lets Wisp scan installed games from this launcher and expose them as shortcuts on the home Library.",
+      "properties": {
+        "type": {
+          "type": "string",
+          "enum": ["steam", "heroic", "lutris", "retroarch", "pegasus"],
+          "description": "Launcher backend Wisp uses to parse the library metadata."
+        },
+        "containerPath": {
+          "type": "string",
+          "pattern": "^/",
+          "description": "Absolute path inside the container where the launcher stores its library manifests (e.g. /config/.steam/steam/steamapps)."
+        },
+        "extra": {
+          "type": "object",
+          "additionalProperties": { "type": "string" },
+          "description": "Provider-specific options. Reserved for future use."
+        }
+      },
+      "required": ["type", "containerPath"],
+      "additionalProperties": false
+    }
+  }
+}

@@ -1,0 +1,41 @@
+{
+  "$schema": "../wisp.schema.json",
+  "slug": "retroarch",
+  "name": "RetroArch",
+  "description": "Frontend for emulators. ROMs, cores and configs shared; saves and states per user.",
+  "image": "lscr.io/linuxserver/retroarch:latest",
+  "icon": "icon.svg",
+  "mountFields": [
+    {
+      "key": "config",
+      "label": "User config, saves & states",
+      "description": "Per-user RetroArch config — saves and states live inside this directory.",
+      "scope": "perUser",
+      "placeholder": "retroarch",
+      "mounts": [{ "containerPath": "/config", "mode": "rw" }],
+      "advanced": true
+    },
+    {
+      "key": "roms",
+      "label": "ROMs library",
+      "description": "Generic ROMs library, read-only. Not RetroArch-specific — point at the same dir other emulators use.",
+      "scope": "shared",
+      "placeholder": "/data/shared/roms",
+      "mounts": [{ "containerPath": "/config/.config/retroarch/roms", "mode": "ro" }]
+    },
+    {
+      "key": "assets",
+      "label": "Shared RetroArch assets",
+      "description": "Root of the shared RetroArch tree — cores, autoconfig, config and system are mounted into the container.",
+      "scope": "shared",
+      "placeholder": "/data/shared/retroarch",
+      "mounts": [
+        { "suffix": "cores", "containerPath": "/config/.config/retroarch/cores", "mode": "rw" },
+        { "suffix": "autoconfig", "containerPath": "/config/.config/retroarch/autoconfig", "mode": "rw" },
+        { "suffix": "config", "containerPath": "/config/.config/retroarch/config", "mode": "rw" },
+        { "suffix": "system", "containerPath": "/config/.config/retroarch/system", "mode": "rw" }
+      ]
+    }
+  ],
+  "defaultEnvVars": { "TZ": "Europe/Paris" }
+}

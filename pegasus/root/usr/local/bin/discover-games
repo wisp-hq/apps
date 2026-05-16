@@ -1,0 +1,10 @@
+#!/usr/bin/env bash
+
+CONFIG_DIR="${XDG_CONFIG_HOME:-$HOME/.config}/pegasus-frontend"
+GAME_DIRS_FILE="$CONFIG_DIR/game_dirs.txt"
+SEARCH_ROOT="${PEGASUS_GAMES_ROOT:-/config}"
+
+mkdir -p "$CONFIG_DIR"
+
+find "$SEARCH_ROOT" -type f -name 'metadata.pegasus.txt' -printf '%h\n' 2>/dev/null \
+  | sort -u > "$GAME_DIRS_FILE"

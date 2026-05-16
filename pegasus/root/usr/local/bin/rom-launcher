@@ -1,0 +1,29 @@
+#!/usr/bin/env bash
+
+set -euo pipefail
+
+CORES="/usr/lib/x86_64-linux-gnu/libretro"
+
+if [[ $# -lt 2 ]]; then
+  echo "Usage: rom-launcher <system> <rom-path> [extra args...]" >&2
+  exit 64
+fi
+
+SYSTEM="$1"
+shift
+
+case "$SYSTEM" in
+  nes)                       exec retroarch -L "$CORES/fceumm_libretro.so" "$@" ;;
+  snes)                      exec retroarch -L "$CORES/snes9x_libretro.so" "$@" ;;
+  gb|gbc|gba)                exec retroarch -L "$CORES/mgba_libretro.so" "$@" ;;
+  megadrive|mastersystem)    exec retroarch -L "$CORES/genesis_plus_gx_libretro.so" "$@" ;;
+  n64)                       exec retroarch -L "$CORES/mupen64plus_next_libretro.so" "$@" ;;
+  psx)                       exec retroarch -L "$CORES/pcsx_rearmed_libretro.so" "$@" ;;
+  switch)                    exec /opt/eden/AppRun "$@" ;;
+  3ds)                       exec /opt/azahar/AppRun "$@" ;;
+  wiiu)                      exec /opt/cemu/AppRun -g "$@" ;;
+  *)
+    echo "rom-launcher: unknown system '$SYSTEM'" >&2
+    exit 1
+    ;;
+esac

@@ -1,0 +1,35 @@
+{
+  "$schema": "../wisp.schema.json",
+  "slug": "steam",
+  "name": "Steam",
+  "description": "Steam client. Library shared across users (heavy first launch — pulls a multi-GB image).",
+  "image": "lscr.io/linuxserver/steam:latest",
+  "icon": "icon.svg",
+  "mountFields": [
+    {
+      "key": "config",
+      "label": "Account & settings",
+      "scope": "perUser",
+      "placeholder": "steam",
+      "mounts": [{ "containerPath": "/config", "mode": "rw" }],
+      "advanced": true
+    },
+    {
+      "key": "library",
+      "label": "Steam library",
+      "description": "Root of a Steam library — only common/, shadercache/ and workshop/ are mounted into the container.",
+      "scope": "shared",
+      "placeholder": "/data/shared/SteamLibrary",
+      "mounts": [
+        { "suffix": "common", "containerPath": "/config/.local/share/Steam/steamapps/common", "mode": "rw" },
+        { "suffix": "shadercache", "containerPath": "/config/.local/share/Steam/steamapps/shadercache", "mode": "rw" },
+        { "suffix": "workshop", "containerPath": "/config/.local/share/Steam/steamapps/workshop", "mode": "rw" }
+      ]
+    }
+  ],
+  "defaultEnvVars": { "TZ": "Europe/Paris" },
+  "shortcutProvider": {
+    "type": "steam",
+    "containerPath": "/config/.local/share/Steam/steamapps"
+  }
+}

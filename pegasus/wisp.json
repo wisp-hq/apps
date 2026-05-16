@@ -1,0 +1,27 @@
+{
+  "$schema": "../wisp.schema.json",
+  "slug": "pegasus",
+  "name": "Pegasus",
+  "description": "Cross-platform emulation frontend. ROMs shared; collections and config per user.",
+  "image": "ghcr.io/wisp-hq/pegasus:latest",
+  "icon": "icon.svg",
+  "mountFields": [
+    {
+      "key": "config",
+      "label": "User config",
+      "scope": "perUser",
+      "placeholder": "pegasus",
+      "mounts": [{ "containerPath": "/config", "mode": "rw" }],
+      "advanced": true
+    },
+    {
+      "key": "roms",
+      "label": "ROMs library",
+      "description": "Generic ROMs library, read-only. Point at the same dir other emulators use.",
+      "scope": "shared",
+      "placeholder": "/data/shared/roms",
+      "mounts": [{ "containerPath": "/config/roms", "mode": "ro" }]
+    }
+  ],
+  "defaultEnvVars": { "TZ": "Europe/Paris" }
+}

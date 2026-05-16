@@ -1,0 +1,19 @@
+{
+  "$schema": "../wisp.schema.json",
+  "slug": "firefox",
+  "name": "Firefox",
+  "description": "Web browser, sandboxed per user.",
+  "image": "ghcr.io/wisp-hq/firefox:latest",
+  "icon": "icon.svg",
+  "mountFields": [
+    {
+      "key": "profile",
+      "label": "Profile",
+      "scope": "perUser",
+      "placeholder": "firefox",
+      "mounts": [{ "containerPath": "/config", "mode": "rw" }],
+      "advanced": true
+    }
+  ],
+  "defaultEnvVars": { "TZ": "Europe/Paris" }
+}
