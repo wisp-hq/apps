@@ -1,0 +1,172 @@
+{
+  "nes": {
+    "launcher": "retroarch",
+    "core": "nestopia",
+    "extensions": [".nes", ".fds", ".unf", ".unif", ".zip", ".7z"]
+  },
+  "snes": {
+    "launcher": "retroarch",
+    "core": "snes9x",
+    "extensions": [".sfc", ".smc", ".fig", ".swc", ".zip", ".7z"]
+  },
+  "n64": {
+    "launcher": "retroarch",
+    "core": "mupen64plus_next",
+    "extensions": [".n64", ".v64", ".z64", ".zip", ".7z"]
+  },
+  "gc": {
+    "launcher": "retroarch",
+    "core": "dolphin",
+    "extensions": [".iso", ".gcm", ".gcz", ".rvz", ".ciso"]
+  },
+  "wii": {
+    "launcher": "retroarch",
+    "core": "dolphin",
+    "extensions": [".iso", ".wbfs", ".rvz", ".wia", ".ciso"]
+  },
+  "gb": {
+    "launcher": "retroarch",
+    "core": "gambatte",
+    "extensions": [".gb", ".zip", ".7z"]
+  },
+  "gbc": {
+    "launcher": "retroarch",
+    "core": "gambatte",
+    "extensions": [".gbc", ".zip", ".7z"]
+  },
+  "gba": {
+    "launcher": "retroarch",
+    "core": "mgba",
+    "extensions": [".gba", ".zip", ".7z"]
+  },
+  "nds": {
+    "launcher": "retroarch",
+    "core": "melonds",
+    "extensions": [".nds", ".zip", ".7z"]
+  },
+  "virtualboy": {
+    "launcher": "retroarch",
+    "core": "mednafen_vb",
+    "extensions": [".vb", ".zip", ".7z"]
+  },
+  "megadrive": {
+    "launcher": "retroarch",
+    "core": "genesis_plus_gx",
+    "extensions": [".md", ".gen", ".smd", ".bin", ".zip", ".7z"]
+  },
+  "mastersystem": {
+    "launcher": "retroarch",
+    "core": "genesis_plus_gx",
+    "extensions": [".sms", ".zip", ".7z"]
+  },
+  "gamegear": {
+    "launcher": "retroarch",
+    "core": "genesis_plus_gx",
+    "extensions": [".gg", ".zip", ".7z"]
+  },
+  "sega32x": {
+    "launcher": "retroarch",
+    "core": "picodrive",
+    "extensions": [".32x", ".zip", ".7z"]
+  },
+  "segacd": {
+    "launcher": "retroarch",
+    "core": "genesis_plus_gx",
+    "extensions": [".m3u", ".chd", ".iso", ".cue"]
+  },
+  "saturn": {
+    "launcher": "retroarch",
+    "core": "mednafen_saturn",
+    "extensions": [".m3u", ".chd", ".cue"]
+  },
+  "dreamcast": {
+    "launcher": "retroarch",
+    "core": "flycast",
+    "extensions": [".m3u", ".chd", ".gdi", ".cue"]
+  },
+  "psx": {
+    "launcher": "retroarch",
+    "core": "swanstation",
+    "extensions": [".m3u", ".chd", ".pbp", ".cue"]
+  },
+  "ps2": {
+    "launcher": "retroarch",
+    "core": "pcsx2",
+    "extensions": [".iso", ".chd", ".cso", ".bin"]
+  },
+  "psp": {
+    "launcher": "retroarch",
+    "core": "ppsspp",
+    "extensions": [".iso", ".cso", ".pbp"]
+  },
+  "pcengine": {
+    "launcher": "retroarch",
+    "core": "mednafen_pce",
+    "extensions": [".pce", ".zip", ".7z"]
+  },
+  "neogeo": {
+    "launcher": "retroarch",
+    "core": "fbneo",
+    "extensions": [".zip", ".7z"]
+  },
+  "ngp": {
+    "launcher": "retroarch",
+    "core": "mednafen_ngp",
+    "extensions": [".ngp", ".zip", ".7z"]
+  },
+  "ngpc": {
+    "launcher": "retroarch",
+    "core": "mednafen_ngp",
+    "extensions": [".ngc", ".zip", ".7z"]
+  },
+  "arcade": {
+    "launcher": "retroarch",
+    "core": "mame",
+    "extensions": [".zip", ".7z"]
+  },
+  "atari2600": {
+    "launcher": "retroarch",
+    "core": "stella",
+    "extensions": [".a26", ".bin", ".zip", ".7z"]
+  },
+  "atari7800": {
+    "launcher": "retroarch",
+    "core": "prosystem",
+    "extensions": [".a78", ".zip", ".7z"]
+  },
+  "lynx": {
+    "launcher": "retroarch",
+    "core": "handy",
+    "extensions": [".lnx", ".zip", ".7z"]
+  },
+  "jaguar": {
+    "launcher": "retroarch",
+    "core": "virtualjaguar",
+    "extensions": [".jag", ".j64", ".zip", ".7z"]
+  },
+  "wonderswan": {
+    "launcher": "retroarch",
+    "core": "mednafen_wswan",
+    "extensions": [".ws", ".zip", ".7z"]
+  },
+  "wonderswancolor": {
+    "launcher": "retroarch",
+    "core": "mednafen_wswan",
+    "extensions": [".wsc", ".zip", ".7z"]
+  },
+  "msx": {
+    "launcher": "retroarch",
+    "core": "bluemsx",
+    "extensions": [".rom", ".mx1", ".mx2", ".dsk", ".zip", ".7z"]
+  },
+  "scummvm": {
+    "launcher": "retroarch",
+    "core": "scummvm",
+    "extensions": [".scummvm"]
+  },
+  "dos": {
+    "launcher": "retroarch",
+    "core": "dosbox_pure",
+    "extensions": [".exe", ".com", ".bat", ".conf", ".iso", ".cue", ".zip", ".7z"]
+  }
+}

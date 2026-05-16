@@ -1,0 +1,352 @@
+#!/usr/bin/env bash
+# Scan WISP_ROMS_DIR for ROMs and emit a library.json conforming to wisp's
+# library-file shortcuts provider. The script's job is intentionally small:
+# enumerate the files on disk, hash each one, and write a JSON manifest. All
+# metadata enrichment (Screenscraper, thumbnails, regional alternatives) is
+# wisp's responsibility — it reads the manifest and queues whatever lookups
+# it needs against the hashes we emit.
+#
+# Two phases (the boundary mostly matters for UX):
+#   1. Quick pass: walk the filesystem, dedupe, emit every shortcut without
+#      a hash. Wisp picks up the full set fast.
+#   2. Hash pass: sha1 each ROM (skipping anything whose size+mtime matches
+#      the on-disk cache), patch the entries, re-write library.json every
+#      batch. fsnotify on wisp's side reconciles each rewrite.
+#
+# Cache layout (single JSON at WISP_LIBRARY_CACHE), keyed by the shortcut's ROM
+# path. We track stats for both the shortcut file itself and the resolved data
+# file (the actual binary content we hash), so editing the .m3u/.cue to point
+# at a different disc image correctly invalidates the cached hashes.
+#   {
+#     "<shortcut-path>": {
+#       "romSize": N, "romMtime": N,
+#       "dataPath": "<abs-path>", "dataSize": N, "dataMtime": N,
+#       "crc32": "...", "md5": "...", "sha1": "..."
+#     }
+#   }
+set -euo pipefail
+
+CONFIG_PATH="${WISP_LIBRARY_CONFIG:-/etc/wisp/library-config.json}"
+ROMS_DIR="${WISP_ROMS_DIR:-/roms}"
+OUTPUT_PATH="${WISP_LIBRARY_OUTPUT:-/config/.local/share/wisp/library.json}"
+CACHE_PATH="${WISP_LIBRARY_CACHE:-/config/.cache/wisp/library-hashes.json}"
+BATCH_SIZE="${WISP_LIBRARY_BATCH:-25}"
+
+mkdir -p "$(dirname "$OUTPUT_PATH")" "$(dirname "$CACHE_PATH")"
+
+if [ ! -f "$CACHE_PATH" ]; then
+  echo '{}' > "$CACHE_PATH"
+fi
+cache=$(cat "$CACHE_PATH")
+
+write_library() {
+  local payload="$1"
+  local tmp="${OUTPUT_PATH}.tmp"
+  echo "$payload" > "$tmp" && mv "$tmp" "$OUTPUT_PATH"
+}
+
+write_cache() {
+  local tmp="${CACHE_PATH}.tmp"
+  echo "$cache" > "$tmp" && mv "$tmp" "$CACHE_PATH"
+}
+
+if [ ! -d "$ROMS_DIR" ] || [ ! -f "$CONFIG_PATH" ]; then
+  write_library '{"version":1,"shortcuts":[]}'
+  echo "wisp-generate-library: no roms dir or config — wrote empty library" >&2
+  exit 0
+fi
+
+# Single-system configs (eden, azahar, …) scan $ROMS_DIR directly; multi-system
+# configs (retroarch) scan $ROMS_DIR/<system_id> per system, because file
+# extensions overlap across cores (.zip matches NES/SNES/MD/…) and the
+# directory layout is the only way to disambiguate.
+num_systems=$(jq -r 'length' "$CONFIG_PATH")
+
+shortcuts="[]"
+tasks=()
+
+# Per-app extension point: if an emulator app ships /etc/wisp/title-id-extractor,
+# we invoke it for each ROM to enrich the entry with a stable game identifier
+# (Nintendo "Title ID", Switch "Application ID", etc.). Wisp consumes this for
+# its mods feature. Contract:
+#   args:    <system_id> <rom_path>
+#   stdout:  the title id (empty if unknown)
+#   exit:    always 0 (errors mean "no id", not "failure")
+# The shared script stays agnostic; each app owns its own extraction logic with
+# whatever tools, caches, or keys are appropriate to that emulator.
+TITLE_ID_EXTRACTOR="${WISP_TITLE_ID_EXTRACTOR:-/etc/wisp/title-id-extractor}"
+
+extract_title_id() {
+  local system_id="$1"
+  local rom="$2"
+  [ -x "$TITLE_ID_EXTRACTOR" ] || return 0
+  "$TITLE_ID_EXTRACTOR" "$system_id" "$rom" 2>/dev/null || true
+}
+
+build_find_predicates() {
+  # Translate `[".nes",".zip"]` into `-iname '*.nes' -o -iname '*.zip'`.
+  # `-iname` is POSIX find, unlike `-regex` flavours which differ across
+  # GNU/BSD/busybox — portable for any LSIO base we may end up on.
+  local exts_json="$1"
+  local first=1
+  while IFS= read -r ext; do
+    [ -z "$ext" ] && continue
+    if [ "$first" -eq 1 ]; then
+      printf -- '-iname\n*.%s\n' "$ext"
+      first=0
+    else
+      printf -- '-o\n-iname\n*.%s\n' "$ext"
+    fi
+  done < <(jq -r '.[] | ltrimstr(".")' <<< "$exts_json")
+}
+
+# Phase 1 — collect tasks, emit a library.json without hashes.
+while IFS= read -r system_id; do
+  [ -z "$system_id" ] && continue
+  cfg=$(jq -e --arg id "$system_id" '.[$id]' "$CONFIG_PATH" 2>/dev/null) || continue
+
+  launcher=$(jq -r '.launcher // "retroarch"' <<< "$cfg")
+  core=$(jq -r '.core // ""' <<< "$cfg")
+  exts=$(jq -c '.extensions' <<< "$cfg")
+  if [ "$num_systems" -eq 1 ]; then
+    system_dir="$ROMS_DIR"
+  else
+    system_dir="${ROMS_DIR}/${system_id}"
+  fi
+  [ ! -d "$system_dir" ] && continue
+
+  mapfile -t find_preds < <(build_find_predicates "$exts")
+  [ "${#find_preds[@]}" -eq 0 ] && continue
+
+  # Explicit unset before declare — `declare -A foo=()` in a loop body doesn't
+  # reliably clear an existing global; stale entries leak between iterations.
+  unset ext_prio excluded best_path best_prio
+  declare -A ext_prio=()
+  prio_idx=0
+  while IFS= read -r ext; do
+    [ -z "$ext" ] && continue
+    ext_prio["$ext"]=$prio_idx
+    prio_idx=$((prio_idx + 1))
+  done < <(jq -r '.[] | ltrimstr(".") | ascii_downcase' <<< "$exts")
+
+  # Pre-pass: read every .m3u under this system dir and collect the files it
+  # references. The standard multi-disc layout — Mario.m3u points at
+  # "Mario - Disc 1.cue", "Mario - Disc 2.cue" — should surface once (the m3u),
+  # not once per disc.
+  declare -A excluded=()
+  while IFS= read -r -d '' m3u; do
+    m3u_dir=$(dirname "$m3u")
+    while IFS= read -r ref || [ -n "$ref" ]; do
+      ref="${ref%$'\r'}"
+      ref="${ref#"${ref%%[![:space:]]*}"}"
+      ref="${ref%"${ref##*[![:space:]]}"}"
+      [ -z "$ref" ] && continue
+      [[ "$ref" == \#* ]] && continue
+      if [[ "$ref" == /* ]]; then
+        abs="$ref"
+      else
+        abs="${m3u_dir}/${ref}"
+      fi
+      excluded["$abs"]=1
+    done < "$m3u"
+  done < <(find "$system_dir" -type f -iname '*.m3u' -print0)
+
+  # Scan + dedupe by stem (filename without extension, case-insensitive).
+  # Highest-priority extension wins — order in library-config.json drives this.
+  declare -A best_path=()
+  declare -A best_prio=()
+
+  while IFS= read -r -d '' rom; do
+    [ -n "${excluded[$rom]:-}" ] && continue
+
+    name="$(basename "$rom")"
+    stem="${name%.*}"
+    ext_lower="${name##*.}"
+    ext_lower="${ext_lower,,}"
+    stem_key="${stem,,}"
+    prio="${ext_prio[$ext_lower]:-999}"
+
+    current_prio="${best_prio[$stem_key]:-9999}"
+    if [ "$prio" -lt "$current_prio" ]; then
+      best_path["$stem_key"]="$rom"
+      best_prio["$stem_key"]="$prio"
+    fi
+  done < <(find "$system_dir" -type f \( "${find_preds[@]}" \) -print0)
+
+  [ "${#best_path[@]}" -eq 0 ] && continue
+
+  while IFS= read -r rom; do
+    [ -z "$rom" ] && continue
+    name="$(basename "$rom")"
+    label="${name%.*}"
+
+    if [ "$launcher" = "retroarch" ] && [ -n "$core" ]; then
+      lp=$(jq -nc --arg l "$launcher" --arg c "$core" --arg p "$rom" \
+        '{LAUNCHER: $l, RETROARCH_CORE: $c, SHORTCUT_PATH: $p}')
+    else
+      lp=$(jq -nc --arg l "$launcher" --arg p "$rom" \
+        '{LAUNCHER: $l, SHORTCUT_PATH: $p}')
+    fi
+
+    # externalId is the canonical game identifier when we can extract one
+    # (Title ID / Application ID for Nintendo platforms). When extraction
+    # isn't possible yet (no extractor hook, emulator cache not populated,
+    # keys missing, ...), fall back to "<system>:<filename>" — unique enough
+    # to drive the UI, and replaced in place once enrichment succeeds.
+    title_id=$(extract_title_id "$system_id" "$rom")
+    eid="${title_id:-${system_id}:${name}}"
+
+    entry=$(jq -nc \
+      --arg eid "$eid" \
+      --arg label "$label" \
+      --arg platform "$system_id" \
+      --argjson lp "$lp" \
+      '{externalId: $eid, name: $label, launchParams: $lp, metadata: {platform: $platform}}')
+
+    shortcuts=$(jq -c --argjson e "$entry" '. + [$e]' <<< "$shortcuts")
+    tasks+=("$rom")
+  done < <(printf '%s\n' "${best_path[@]}" | sort)
+done < <(jq -r 'keys[]' "$CONFIG_PATH")
+
+write_library "$(jq -n --argjson sc "$shortcuts" '{version:1, shortcuts:$sc}')"
+count=$(jq -r '. | length' <<< "$shortcuts")
+echo "wisp-generate-library: phase 1 done — wrote $count shortcuts (no hashes yet)"
+
+# resolve_data_file follows .m3u and .cue indirection so the hash we compute
+# matches what metadata DBs like Screenscraper actually index (the disc image,
+# not the playlist or cuesheet text). Falls back to the input path when there's
+# nothing to resolve or the resolution fails.
+resolve_data_file() {
+  local file="$1"
+  local dir
+  dir=$(dirname "$file")
+  local ext="${file##*.}"
+  ext="${ext,,}"
+
+  case "$ext" in
+    m3u)
+      local first
+      first=$(grep -Ev '^[[:space:]]*(#|$)' "$file" 2>/dev/null | head -1 | tr -d '\r')
+      first="${first#"${first%%[![:space:]]*}"}"
+      first="${first%"${first##*[![:space:]]}"}"
+      if [ -n "$first" ]; then
+        if [[ "$first" == /* ]]; then
+          [ -f "$first" ] && resolve_data_file "$first" && return
+        else
+          [ -f "${dir}/${first}" ] && resolve_data_file "${dir}/${first}" && return
+        fi
+      fi
+      echo "$file"
+      ;;
+    cue)
+      local first
+      first=$(grep -iE '^[[:space:]]*FILE[[:space:]]+"' "$file" 2>/dev/null \
+        | head -1 \
+        | sed -E 's/^[[:space:]]*FILE[[:space:]]+"([^"]+)".*/\1/i' \
+        | tr -d '\r')
+      if [ -n "$first" ]; then
+        if [[ "$first" == /* ]]; then
+          [ -f "$first" ] && { echo "$first"; return; }
+        else
+          [ -f "${dir}/${first}" ] && { echo "${dir}/${first}"; return; }
+        fi
+      fi
+      echo "$file"
+      ;;
+    gdi)
+      # GDI: line 1 is track count, each subsequent line has the filename as the
+      # second-to-last (or quoted) field. Pick the first binary track we see.
+      local first
+      first=$(awk 'NR > 1 {
+        for (i = 1; i <= NF; i++) {
+          if (tolower($i) ~ /\.(bin|raw|iso|img)"?$/) {
+            gsub(/"/, "", $i); print $i; exit
+          }
+        }
+      }' "$file" 2>/dev/null | tr -d '\r')
+      if [ -n "$first" ]; then
+        if [[ "$first" == /* ]]; then
+          [ -f "$first" ] && { echo "$first"; return; }
+        else
+          [ -f "${dir}/${first}" ] && { echo "${dir}/${first}"; return; }
+        fi
+      fi
+      echo "$file"
+      ;;
+    *)
+      echo "$file"
+      ;;
+  esac
+}
+
+# Phase 2 — hash the data behind each shortcut. For .m3u/.cue/.gdi we resolve
+# to the underlying disc image first so the hash matches what metadata DBs
+# (Screenscraper et al.) actually index. The cache invalidates on either the
+# shortcut's own mtime or the resolved data file's mtime changing.
+hashed=0
+recomputed=0
+flush_counter=0
+
+for i in "${!tasks[@]}"; do
+  rom="${tasks[$i]}"
+  [ -z "$rom" ] && continue
+  [ ! -f "$rom" ] && continue
+
+  rom_size=$(stat -c %s "$rom")
+  rom_mtime=$(stat -c %Y "$rom")
+
+  data=$(resolve_data_file "$rom")
+  [ -z "$data" ] && data="$rom"
+  [ ! -f "$data" ] && continue
+  data_size=$(stat -c %s "$data")
+  data_mtime=$(stat -c %Y "$data")
+
+  cached=$(jq -c --arg p "$rom" '.[$p] // null' <<< "$cache")
+  crc32="" md5="" sha1=""
+  if [ "$cached" != "null" ]; then
+    cached_rom_size=$(jq -r '.romSize  // 0' <<< "$cached")
+    cached_rom_mtime=$(jq -r '.romMtime // 0' <<< "$cached")
+    cached_data_size=$(jq -r '.dataSize // 0' <<< "$cached")
+    cached_data_mtime=$(jq -r '.dataMtime // 0' <<< "$cached")
+    if [ "$cached_rom_size" = "$rom_size" ] \
+       && [ "$cached_rom_mtime" = "$rom_mtime" ] \
+       && [ "$cached_data_size" = "$data_size" ] \
+       && [ "$cached_data_mtime" = "$data_mtime" ]; then
+      crc32=$(jq -r '.crc32 // ""' <<< "$cached")
+      md5=$(jq -r '.md5 // ""'   <<< "$cached")
+      sha1=$(jq -r '.sha1 // ""' <<< "$cached")
+    fi
+  fi
+
+  if [ -z "$sha1" ]; then
+    # Single read, three hashes — rhash prints them tab-separated.
+    read -r crc32 md5 sha1 < <(rhash --printf='%C\t%M\t%H\n' "$data")
+    crc32="${crc32^^}"
+    md5="${md5^^}"
+    sha1="${sha1^^}"
+    cache=$(jq -c \
+      --arg p "$rom" \
+      --arg dp "$data" \
+      --arg c "$crc32" --arg m "$md5" --arg s "$sha1" \
+      --argjson rsz "$rom_size" --argjson rmt "$rom_mtime" \
+      --argjson dsz "$data_size" --argjson dmt "$data_mtime" \
+      '.[$p] = {romSize: $rsz, romMtime: $rmt, dataPath: $dp, dataSize: $dsz, dataMtime: $dmt, crc32: $c, md5: $m, sha1: $s}' \
+      <<< "$cache")
+    recomputed=$((recomputed + 1))
+  fi
+
+  shortcuts=$(jq -c --argjson i "$i" --arg c "$crc32" --arg m "$md5" --arg s "$sha1" \
+    '.[$i].metadata.crc32 = $c | .[$i].metadata.md5 = $m | .[$i].metadata.sha1 = $s' <<< "$shortcuts")
+  hashed=$((hashed + 1))
+
+  flush_counter=$((flush_counter + 1))
+  if [ "$flush_counter" -ge "$BATCH_SIZE" ]; then
+    write_library "$(jq -n --argjson sc "$shortcuts" '{version:1, shortcuts:$sc}')"
+    write_cache
+    flush_counter=0
+  fi
+done
+
+write_library "$(jq -n --argjson sc "$shortcuts" '{version:1, shortcuts:$sc}')"
+write_cache
+echo "wisp-generate-library: phase 2 done — $hashed entries hashed ($recomputed recomputed, $((hashed - recomputed)) cached)"

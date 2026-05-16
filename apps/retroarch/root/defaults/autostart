@@ -1,0 +1,22 @@
+#!/bin/bash
+
+if [ ! -f "${HOME}/.config/retroarch/retroarch.cfg" ]; then
+  mkdir -p ${HOME}/.config/retroarch
+  cp -r /usr/share/libretro/* ${HOME}/.config/retroarch/
+  mv ${HOME}/.config/retroarch/info ${HOME}/.config/retroarch/cores
+  if ! ls -l /dev/dri/* > /dev/null 2>&1; then
+    echo 'video_refresh_rate = "15.000000"' > ${HOME}/.config/retroarch/retroarch.cfg
+  fi
+  echo 'vrr_runloop_enable = "true"' >> ${HOME}/.config/retroarch/retroarch.cfg
+fi
+
+nohup /usr/local/bin/wisp-generate-library > /tmp/wisp-library.log 2>&1 &
+
+if [ -n "${SHORTCUT_PATH:-}" ]; then
+  : "${RETROARCH_CORE:?RETROARCH_CORE required when SHORTCUT_PATH is set}"
+  exec /usr/bin/retroarch -f \
+    -L "${HOME}/.config/retroarch/cores/${RETROARCH_CORE}_libretro.so" \
+    "${SHORTCUT_PATH}"
+fi
+
+exec /usr/bin/retroarch -f

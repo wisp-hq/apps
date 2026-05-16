@@ -1,0 +1,44 @@
+{
+  "$schema": "../app.schema.json",
+  "schemaVersion": 1,
+  "slug": "eden",
+  "version": "1.0.2",
+  "name": "Eden",
+  "description": "t:description",
+  "icon": "icon.svg",
+  "category": "emulator",
+  "container": {
+    "image": "ghcr.io/wisp-hq/eden:latest",
+    "env": {
+      "QT_QPA_PLATFORM": "xcb"
+    }
+  },
+  "volumes": [
+    {
+      "id": "config",
+      "label": "t:volumes.config.label",
+      "scope": "perUser",
+      "hostPath": "eden",
+      "containerPath": "/config",
+      "mode": "rw"
+    },
+    {
+      "id": "roms",
+      "label": "t:volumes.roms.label",
+      "scope": "shared",
+      "hostPath": "/data/shared/roms",
+      "containerPath": "/roms",
+      "mode": "ro"
+    }
+  ],
+  "features": {
+    "shortcuts": {
+      "provider": "library-file",
+      "containerPath": "/config/.local/share/wisp/library.json"
+    },
+    "mods": {
+      "source": "gamebanana",
+      "targetPath": "/config/.local/share/eden/load/${titleId}"
+    }
+  }
+}

@@ -1,0 +1,30 @@
+#!/bin/bash
+
+if [ ! -f "${HOME}/.config/Cemu/settings.xml" ]; then
+  mkdir -p "${HOME}/.config/Cemu/"
+  cp /defaults/settings.xml "${HOME}/.config/Cemu/settings.xml"
+fi
+if [ ! -d "${HOME}/.config/Cemu/controllerProfiles" ]; then
+  mkdir -p "${HOME}/.config/Cemu/controllerProfiles"
+  cp /defaults/controllerProfiles/* "${HOME}/.config/Cemu/controllerProfiles/"
+fi
+
+nohup /usr/local/bin/wisp-generate-library > /tmp/wisp-library.log 2>&1 &
+
+# Cemu's title_list_cache.xml — the source of truth for our title-id-extractor —
+# only exists after Cemu has scanned its GamePaths once. On a fresh install the
+# first library.json is emitted without titleIds. As soon as Cemu populates the
+# cache (typically a few seconds after launch), re-run the generator so library
+# entries get enriched in place; wisp picks up the rewrite via fsnotify.
+cache="${HOME}/.local/share/Cemu/title_list_cache.xml"
+nohup bash -c "
+  while [ ! -s '$cache' ]; do sleep 5; done
+  sleep 3  # let Cemu finish writing
+  /usr/local/bin/wisp-generate-library
+" > /tmp/wisp-library-enrich.log 2>&1 &
+
+if [ -n "${SHORTCUT_PATH:-}" ]; then
+  exec /opt/cemu/AppRun -g "${SHORTCUT_PATH}"
+fi
+
+exec /opt/cemu/AppRun

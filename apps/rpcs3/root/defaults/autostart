@@ -1,0 +1,14 @@
+#!/bin/bash
+
+if [ ! -f "${HOME}/.config/rpcs3/input_configs/global/Default.yml" ]; then
+  mkdir -p "${HOME}/.config/rpcs3/input_configs/global/"
+  cp /defaults/Default.yml "${HOME}/.config/rpcs3/input_configs/global/Default.yml"
+fi
+
+nohup /usr/local/bin/wisp-generate-library > /tmp/wisp-library.log 2>&1 &
+
+if [ -n "${SHORTCUT_PATH:-}" ]; then
+  exec /opt/rpcs3/AppRun --no-gui "${SHORTCUT_PATH}"
+fi
+
+exec /opt/rpcs3/AppRun

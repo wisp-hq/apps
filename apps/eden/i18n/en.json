@@ -1,0 +1,5 @@
+{
+  "description": "Nintendo Switch emulator. Browse your Switch library directly from the wisp shortcuts tab.",
+  "volumes.config.label": "User config, saves & states",
+  "volumes.roms.label": "ROMs library"
+}

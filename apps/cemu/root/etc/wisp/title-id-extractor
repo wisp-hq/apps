@@ -1,0 +1,32 @@
+#!/usr/bin/env bash
+# Cemu title-id extractor. Reads ~/.local/share/Cemu/title_list_cache.xml,
+# populated by Cemu after its first scan of the configured GamePaths.
+#
+# The cache contains one <title> per (base game, update, DLC) tuple. We only
+# emit the base game's titleId — identified by app_type="80000000" — because
+# that's what mods sites key on. Updates (0800001b) and DLC (0800000e) are
+# skipped.
+#
+# Returns empty silently if the cache doesn't yet exist (Cemu hasn't scanned),
+# or if the given rom path isn't represented (Cemu doesn't know about it yet).
+set -euo pipefail
+
+system_id="${1:-}"
+rom="${2:-}"
+
+[ "$system_id" = "wiiu" ] || exit 0
+[ -n "$rom" ] || exit 0
+
+cache="${HOME}/.local/share/Cemu/title_list_cache.xml"
+[ -f "$cache" ] || exit 0
+
+# Each <title>...</title> spans multiple lines in the cache. Flatten the file
+# onto one entry per line by stripping newlines then splitting on </title>,
+# then grep down to the entry matching both our ROM path and the base-game
+# app_type. Final sed pulls out the titleId attribute.
+tr -d '\n' < "$cache" \
+  | sed 's|</title>|\n|g' \
+  | grep -F "<path>$rom</path>" \
+  | grep 'app_type="80000000"' \
+  | head -1 \
+  | sed -E 's|.*titleId="([0-9a-fA-F]+)".*|\1|'

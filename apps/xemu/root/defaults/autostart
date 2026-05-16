@@ -1,0 +1,9 @@
+#!/bin/bash
+
+nohup /usr/local/bin/wisp-generate-library > /tmp/wisp-library.log 2>&1 &
+
+if [ -n "${SHORTCUT_PATH:-}" ]; then
+  exec /opt/xemu/AppRun -full-screen -dvd_path "${SHORTCUT_PATH}"
+fi
+
+exec /opt/xemu/AppRun

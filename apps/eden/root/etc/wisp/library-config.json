@@ -1,0 +1,6 @@
+{
+  "switch": {
+    "launcher": "eden",
+    "extensions": [".nsp", ".xci", ".nca", ".nro", ".nso"]
+  }
+}

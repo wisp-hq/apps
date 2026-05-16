@@ -1,0 +1,6 @@
+{
+  "ps3": {
+    "launcher": "rpcs3",
+    "extensions": [".iso", ".pkg", ".bin"]
+  }
+}

@@ -1,0 +1,47 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://raw.githubusercontent.com/wisp-hq/apps/main/manifest.schema.json",
+  "title": "Wisp catalog manifest",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schemaVersion", "name", "apps"],
+  "properties": {
+    "$schema": { "type": "string" },
+
+    "schemaVersion": {
+      "type": "integer",
+      "const": 1,
+      "description": "Manifest format version. Bumped only on breaking changes."
+    },
+    "name": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Catalog display name shown in the Wisp client when the user registers this repo."
+    },
+    "description": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Short blurb describing the catalog."
+    },
+    "homepage": {
+      "type": "string",
+      "format": "uri",
+      "description": "Public URL — typically the repository page."
+    },
+    "icon": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Icon file path relative to manifest.json (e.g. 'icon.svg')."
+    },
+    "apps": {
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": {
+        "type": "string",
+        "pattern": "^[a-z0-9][a-z0-9/-]*[a-z0-9]$"
+      },
+      "description": "Paths to app folders (each containing an app.json) relative to this manifest. The slug is read from app.json itself; the path's last segment must equal the slug."
+    }
+  }
+}

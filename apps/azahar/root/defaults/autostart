@@ -1,0 +1,16 @@
+#!/bin/bash
+
+cfg="${HOME}/.config/azahar-emu/qt-config.ini"
+if [ ! -f "$cfg" ]; then
+  mkdir -p "$(dirname "$cfg")"
+  [ -f /defaults/qt-config.ini ] && cp /defaults/qt-config.ini "$cfg" || : > "$cfg"
+  /usr/local/bin/wisp-reconcile "$cfg" /defaults/qt-config.overrides.ini
+fi
+
+nohup /usr/local/bin/wisp-generate-library > /tmp/wisp-library.log 2>&1 &
+
+if [ -n "${SHORTCUT_PATH:-}" ]; then
+  exec /usr/sbin/azahar "${SHORTCUT_PATH}" > >(tee /tmp/azahar.log) 2>&1
+fi
+
+exec /usr/sbin/azahar > >(tee /tmp/azahar.log) 2>&1

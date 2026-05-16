@@ -1,0 +1,5 @@
+{
+  "description": "Original Xbox emulator. Browse your Xbox library directly from the wisp shortcuts tab.",
+  "volumes.config.label": "User config, saves & states",
+  "volumes.roms.label": "ROMs library"
+}

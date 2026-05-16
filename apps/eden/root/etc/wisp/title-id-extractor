@@ -1,0 +1,34 @@
+#!/usr/bin/env bash
+# Eden title-id extractor. Reads the NSP/XCI container with nstool, using the
+# user's Switch keys (already present in ~/.local/share/eden/keys/prod.keys —
+# Eden cannot run without them, so we leverage the same legitimate key store).
+#
+# Returns empty silently if keys are missing, the file isn't a recognised
+# container, or nstool fails to parse (corrupt dump, missing key for a specific
+# title, etc.).
+set -euo pipefail
+
+system_id="${1:-}"
+rom="${2:-}"
+
+[ "$system_id" = "switch" ] || exit 0
+[ -f "$rom" ] || exit 0
+
+keys="${HOME}/.local/share/eden/keys/prod.keys"
+[ -f "$keys" ] || exit 0
+
+ext="${rom##*.}"
+case "${ext,,}" in
+  nsp) container="nsp" ;;
+  xci) container="xci" ;;
+  *)   exit 0 ;;
+esac
+
+# nstool prints metadata for the container; we want the 16-hex application id.
+# Label varies across versions ("TitleId", "Application Id", "Program Id"),
+# so we grep loosely and pull the first 16-hex token.
+nstool --keysetpath "$keys" -t "$container" "$rom" 2>/dev/null \
+  | grep -iE '(title|application|program)[[:space:]]*id' \
+  | head -1 \
+  | grep -oE '[0-9a-fA-F]{16}' \
+  | head -1

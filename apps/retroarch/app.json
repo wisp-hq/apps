@@ -1,0 +1,62 @@
+{
+  "$schema": "../app.schema.json",
+  "schemaVersion": 1,
+  "slug": "retroarch",
+  "version": "1.0.1",
+  "name": "RetroArch",
+  "description": "t:description",
+  "icon": "icon.svg",
+  "category": "emulator",
+  "container": {
+    "image": "ghcr.io/wisp-hq/retroarch:latest"
+  },
+  "volumes": [
+    {
+      "id": "config",
+      "label": "t:volumes.config.label",
+      "scope": "perUser",
+      "hostPath": "retroarch",
+      "containerPath": "/config",
+      "mode": "rw"
+    },
+    {
+      "id": "roms",
+      "label": "t:volumes.roms.label",
+      "scope": "shared",
+      "hostPath": "/data/shared/roms",
+      "containerPath": "/roms",
+      "mode": "ro"
+    },
+    {
+      "id": "assets",
+      "label": "t:volumes.assets.label",
+      "scope": "shared",
+      "hostPath": "/data/shared/retroarch",
+      "containerPath": "/config/.config/retroarch",
+      "mounts": [
+        {
+          "name": "autoconfig",
+          "mode": "rw"
+        },
+        {
+          "name": "config",
+          "mode": "rw"
+        },
+        {
+          "name": "cores",
+          "mode": "rw"
+        },
+        {
+          "name": "system",
+          "mode": "rw"
+        }
+      ]
+    }
+  ],
+  "features": {
+    "shortcuts": {
+      "provider": "library-file",
+      "containerPath": "/config/.local/share/wisp/library.json"
+    }
+  }
+}

@@ -1,0 +1,8 @@
+{
+  "$schema": "./manifest.schema.json",
+  "schemaVersion": 1,
+  "name": "Wisp Official",
+  "description": "Official Wisp app catalog.",
+  "homepage": "https://github.com/wisp-hq/apps",
+  "apps": ["apps/azahar", "apps/cemu", "apps/eden", "apps/firefox", "apps/heroic", "apps/lutris", "apps/retroarch", "apps/rpcs3", "apps/steam", "apps/xemu"]
+}

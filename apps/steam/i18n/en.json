@@ -1,0 +1,5 @@
+{
+  "description": "Steam client. Library shared across users (heavy first launch — pulls a multi-GB image).",
+  "volumes.config.label": "Account & settings",
+  "volumes.library.label": "Steam library"
+}

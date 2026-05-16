@@ -1,0 +1,189 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://raw.githubusercontent.com/wisp-hq/apps/main/apps/app.schema.json",
+  "title": "Wisp app manifest",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schemaVersion", "slug", "version", "name", "icon", "container"],
+  "properties": {
+    "$schema": { "type": "string" },
+
+    "schemaVersion": {
+      "type": "integer",
+      "const": 1,
+      "description": "Manifest format version. Bumped only on breaking changes."
+    },
+    "slug": {
+      "type": "string",
+      "pattern": "^[a-z0-9][a-z0-9-]{1,62}$",
+      "description": "Stable identifier. Must match the parent directory name."
+    },
+    "version": {
+      "type": "string",
+      "pattern": "^\\d+\\.\\d+\\.\\d+(?:-[0-9A-Za-z.-]+)?$",
+      "description": "Semver of this manifest. Bumped on every content change. Used to detect updates."
+    },
+    "name": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Display name (untranslated; brand names stay as-is)."
+    },
+    "description": {
+      "$ref": "#/$defs/translatableString",
+      "description": "Short blurb shown in the catalog."
+    },
+    "icon": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Icon file path relative to app.json (e.g. 'icon.png')."
+    },
+    "defaultLocale": {
+      "type": "string",
+      "pattern": "^[a-z]{2}(-[A-Z]{2})?$",
+      "default": "en",
+      "description": "BCP-47 source locale for i18n/<locale>.json files."
+    },
+    "category": {
+      "enum": ["browser", "launcher", "emulator", "productivity", "media", "development", "communication", "other"],
+      "description": "Catalog category used by the client to group/filter apps. Open list — extend as needed."
+    },
+
+    "container": { "$ref": "#/$defs/container" },
+    "volumes":   { "type": "array", "items": { "$ref": "#/$defs/volume" } },
+    "features":  { "$ref": "#/$defs/features" }
+  },
+
+  "$defs": {
+    "translatableString": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Either a literal string or 't:<key>' resolved from i18n/<locale>.json."
+    },
+
+    "container": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["image"],
+      "properties": {
+        "image": {
+          "type": "string",
+          "minLength": 1,
+          "description": "OCI image reference (e.g. 'lscr.io/linuxserver/steam:latest')."
+        },
+        "env": {
+          "type": "object",
+          "additionalProperties": { "type": "string" }
+        }
+      }
+    },
+
+    "volume": {
+      "oneOf": [
+        { "$ref": "#/$defs/volumeSimple" },
+        { "$ref": "#/$defs/volumeGrouped" }
+      ]
+    },
+
+    "volumeSimple": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "scope", "hostPath", "containerPath", "mode"],
+      "properties": {
+        "id": { "type": "string", "pattern": "^[a-z0-9][a-z0-9-]*$" },
+        "label": { "$ref": "#/$defs/translatableString" },
+        "scope": { "enum": ["shared", "perUser"] },
+        "hostPath": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Host path. For scope=perUser, Wisp appends a per-user subdir at session start."
+        },
+        "containerPath": { "type": "string", "pattern": "^/" },
+        "mode": { "enum": ["ro", "rw"] }
+      }
+    },
+
+    "volumeGrouped": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "scope", "hostPath", "containerPath", "mounts"],
+      "description": "Multiple sub-mounts sharing a single host/container root. Each mount maps {hostPath}/{name} → {containerPath}/{name}. The client may expose an advanced mode to override individual paths.",
+      "properties": {
+        "id": { "type": "string", "pattern": "^[a-z0-9][a-z0-9-]*$" },
+        "label": { "$ref": "#/$defs/translatableString" },
+        "scope": { "enum": ["shared", "perUser"] },
+        "hostPath": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Host root path. Each sub-mount appends its name."
+        },
+        "containerPath": {
+          "type": "string",
+          "pattern": "^/",
+          "description": "Container root path. Each sub-mount appends its name."
+        },
+        "mounts": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["name", "mode"],
+            "properties": {
+              "name": {
+                "type": "string",
+                "pattern": "^[^/]+$",
+                "description": "Leaf name appended to both hostPath and containerPath."
+              },
+              "mode": { "enum": ["ro", "rw"] }
+            }
+          }
+        }
+      }
+    },
+
+    "features": {
+      "type": "object",
+      "additionalProperties": { "type": "object" },
+      "description": "Open feature map. Known features are typed below; unknown features pass through and emit a warning at load time.",
+      "properties": {
+        "shortcuts": { "$ref": "#/$defs/featureShortcuts" },
+        "mods": { "$ref": "#/$defs/featureMods" }
+      }
+    },
+
+    "featureShortcuts": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["provider", "containerPath"],
+      "properties": {
+        "provider": {
+          "type": "string",
+          "description": "Provider id. Built-ins: 'steam' (scans Steam library), 'heroic' (scans Heroic install dir), 'library-file' (reads a JSON file the container generates — see containerPath). Unknown values disable the feature with a warning."
+        },
+        "containerPath": {
+          "type": "string",
+          "pattern": "^/",
+          "description": "For 'library-file': absolute path of the JSON file the container writes ({version:1, shortcuts:[{externalId,name,iconUrl?,launchParams?}]}). For other providers: the directory the provider scans."
+        }
+      }
+    },
+
+    "featureMods": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["source", "targetPath"],
+      "description": "Declares that the app supports user mods. Wisp handles discovery, download, and extraction; the app declares only the source to query and where to land the content inside the container.",
+      "properties": {
+        "source": {
+          "type": "string",
+          "description": "Source identifier Wisp queries for available mods. Built-ins: 'gamebanana'. Unknown values disable the feature with a warning."
+        },
+        "targetPath": {
+          "type": "string",
+          "pattern": "^/",
+          "description": "Absolute container path where Wisp extracts downloaded mod content. Supports `${var}` interpolation against the target game's library entry — available vars: `${titleId}` (the externalId when it's a resolved title id), `${platform}`, `${name}`. Use a literal path when mods share a single root (e.g. Cemu graphic packs all live under graphicPacks/), or interpolate per game (e.g. Eden's per-title load/<titleId>/ layout)."
+        }
+      }
+    }
+  }
+}

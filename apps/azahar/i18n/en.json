@@ -1,0 +1,5 @@
+{
+  "description": "Nintendo 3DS emulator (Citra fork). Browse your 3DS library directly from the wisp shortcuts tab.",
+  "volumes.config.label": "User config, saves & states",
+  "volumes.roms.label": "ROMs library"
+}

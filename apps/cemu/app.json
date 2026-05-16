@@ -1,0 +1,41 @@
+{
+  "$schema": "../app.schema.json",
+  "schemaVersion": 1,
+  "slug": "cemu",
+  "version": "1.0.2",
+  "name": "Cemu",
+  "description": "t:description",
+  "icon": "icon.svg",
+  "category": "emulator",
+  "container": {
+    "image": "ghcr.io/wisp-hq/cemu:latest"
+  },
+  "volumes": [
+    {
+      "id": "config",
+      "label": "t:volumes.config.label",
+      "scope": "perUser",
+      "hostPath": "cemu",
+      "containerPath": "/config",
+      "mode": "rw"
+    },
+    {
+      "id": "roms",
+      "label": "t:volumes.roms.label",
+      "scope": "shared",
+      "hostPath": "/data/shared/roms",
+      "containerPath": "/roms",
+      "mode": "ro"
+    }
+  ],
+  "features": {
+    "shortcuts": {
+      "provider": "library-file",
+      "containerPath": "/config/.local/share/wisp/library.json"
+    },
+    "mods": {
+      "source": "gamebanana",
+      "targetPath": "/config/.config/Cemu/graphicPacks"
+    }
+  }
+}

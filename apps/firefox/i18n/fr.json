@@ -1,0 +1,4 @@
+{
+  "description": "Navigateur web, isolé par utilisateur.",
+  "volumes.profile.label": "Profil"
+}

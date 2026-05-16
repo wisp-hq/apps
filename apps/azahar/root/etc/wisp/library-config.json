@@ -1,0 +1,6 @@
+{
+  "3ds": {
+    "launcher": "azahar",
+    "extensions": [".3ds", ".cci", ".cxi", ".3dsx", ".app", ".cia"]
+  }
+}

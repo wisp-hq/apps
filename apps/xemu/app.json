@@ -1,0 +1,37 @@
+{
+  "$schema": "../app.schema.json",
+  "schemaVersion": 1,
+  "slug": "xemu",
+  "version": "1.0.1",
+  "name": "Xemu",
+  "description": "t:description",
+  "icon": "icon.svg",
+  "category": "emulator",
+  "container": {
+    "image": "ghcr.io/wisp-hq/xemu:latest"
+  },
+  "volumes": [
+    {
+      "id": "config",
+      "label": "t:volumes.config.label",
+      "scope": "perUser",
+      "hostPath": "xemu",
+      "containerPath": "/config",
+      "mode": "rw"
+    },
+    {
+      "id": "roms",
+      "label": "t:volumes.roms.label",
+      "scope": "shared",
+      "hostPath": "/data/shared/roms",
+      "containerPath": "/roms",
+      "mode": "ro"
+    }
+  ],
+  "features": {
+    "shortcuts": {
+      "provider": "library-file",
+      "containerPath": "/config/.local/share/wisp/library.json"
+    }
+  }
+}

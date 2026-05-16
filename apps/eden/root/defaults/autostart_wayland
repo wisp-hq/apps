@@ -1,0 +1,16 @@
+#!/bin/bash
+
+cfg="${HOME}/.config/eden/qt-config.ini"
+if [ ! -f "$cfg" ]; then
+  mkdir -p "$(dirname "$cfg")"
+  [ -f /defaults/qt-config.ini ] && cp /defaults/qt-config.ini "$cfg" || : > "$cfg"
+  /usr/local/bin/wisp-reconcile "$cfg" /defaults/qt-config.overrides.ini
+fi
+
+nohup /usr/local/bin/wisp-generate-library > /tmp/wisp-library.log 2>&1 &
+
+if [ -n "${SHORTCUT_PATH:-}" ]; then
+  exec eden -g "${SHORTCUT_PATH}"
+fi
+
+exec eden

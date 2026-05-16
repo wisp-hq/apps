@@ -1,0 +1,6 @@
+{
+  "xbox": {
+    "launcher": "xemu",
+    "extensions": [".iso", ".xiso"]
+  }
+}

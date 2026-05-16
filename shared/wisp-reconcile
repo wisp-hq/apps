@@ -1,0 +1,106 @@
+#!/usr/bin/env bash
+# wisp-reconcile — apply overrides from one INI file into another, in place.
+#
+# Usage: wisp-reconcile <target> <overrides>
+#
+# For each (section, key) in <overrides>:
+#   - replace the matching key in <target> if present;
+#   - otherwise append it under its section (creating the section at EOF if missing).
+# Target keys, sections, comments, and blank lines not mentioned in <overrides>
+# are preserved as-is.
+#
+# Format: INI-ish — recognizes `[section]` headers and `key=value` lines.
+# Tolerant of Qt qt-config.ini quirks (backslash-nested keys, %-encoded section
+# names, raw byte-array values). No value interpolation.
+
+set -euo pipefail
+
+if [ "$#" -ne 2 ]; then
+  echo "usage: $(basename "$0") <target> <overrides>" >&2
+  exit 64
+fi
+
+target="$1"
+overrides="$2"
+
+[ -r "$target" ]    || { echo "$(basename "$0"): cannot read target: $target" >&2;    exit 1; }
+[ -r "$overrides" ] || { echo "$(basename "$0"): cannot read overrides: $overrides" >&2; exit 1; }
+
+tmp="$(mktemp "${target}.XXXXXX")"
+trap 'rm -f "$tmp"' EXIT
+
+awk '
+  # First file in argv is <overrides>, second is <target>.
+  FNR == NR {
+    if (match($0, /^\[.*\]$/)) {
+      ov_sec = substr($0, 2, length($0) - 2)
+      if (!(ov_sec in ov_sections)) {
+        ov_sections[ov_sec] = 1
+        ov_section_order[++ov_section_count] = ov_sec
+      }
+      next
+    }
+    eq = index($0, "=")
+    if (eq > 0 && ov_sec != "") {
+      key = substr($0, 1, eq - 1)
+      val = substr($0, eq + 1)
+      if (!((ov_sec SUBSEP key) in ov_value)) {
+        ov_keys[ov_sec, ++ov_key_count[ov_sec]] = key
+      }
+      ov_value[ov_sec, key] = val
+    }
+    next
+  }
+
+  function flush_section(   i, k) {
+    if (cur_sec != "" && (cur_sec in ov_sections)) {
+      for (i = 1; i <= ov_key_count[cur_sec]; i++) {
+        k = ov_keys[cur_sec, i]
+        if (!((cur_sec SUBSEP k) in consumed)) {
+          print k "=" ov_value[cur_sec, k]
+          consumed[cur_sec, k] = 1
+        }
+      }
+    }
+  }
+
+  match($0, /^\[.*\]$/) {
+    flush_section()
+    cur_sec = substr($0, 2, length($0) - 2)
+    seen_section[cur_sec] = 1
+    print
+    next
+  }
+
+  /=/ {
+    eq = index($0, "=")
+    key = substr($0, 1, eq - 1)
+    if (cur_sec != "" && ((cur_sec SUBSEP key) in ov_value)) {
+      print key "=" ov_value[cur_sec, key]
+      consumed[cur_sec, key] = 1
+      next
+    }
+    print
+    next
+  }
+
+  { print }
+
+  END {
+    flush_section()
+    for (i = 1; i <= ov_section_count; i++) {
+      sec = ov_section_order[i]
+      if (!(sec in seen_section)) {
+        print ""
+        print "[" sec "]"
+        for (j = 1; j <= ov_key_count[sec]; j++) {
+          k = ov_keys[sec, j]
+          print k "=" ov_value[sec, k]
+        }
+      }
+    }
+  }
+' "$overrides" "$target" > "$tmp"
+
+mv "$tmp" "$target"
+trap - EXIT

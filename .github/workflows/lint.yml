@@ -1,0 +1,76 @@
+name: Lint catalog
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+  workflow_call:
+    inputs:
+      schema-base-url:
+        description: Base URL holding apps/app.schema.json and manifest.schema.json
+        required: false
+        default: https://raw.githubusercontent.com/wisp-hq/apps/main
+        type: string
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - run: npm install -g ajv-cli ajv-formats
+
+      - name: Resolve schemas
+        env:
+          BASE_URL: ${{ inputs.schema-base-url || 'https://raw.githubusercontent.com/wisp-hq/apps/main' }}
+        run: |
+          resolve() {
+            local rel="$1" var="$2"
+            if [ -f "$rel" ]; then
+              echo "$var=$PWD/$rel" >> "$GITHUB_ENV"
+            else
+              local tmp="/tmp/$(basename "$rel")"
+              curl -sSfL "$BASE_URL/$rel" -o "$tmp"
+              echo "$var=$tmp" >> "$GITHUB_ENV"
+            fi
+          }
+          resolve apps/app.schema.json APP_SCHEMA
+          resolve manifest.schema.json MANIFEST_SCHEMA
+
+      - name: Validate manifest.json against schema (draft 2020-12)
+        run: ajv validate --spec=draft2020 -c ajv-formats -s "$MANIFEST_SCHEMA" -d manifest.json --strict=false
+
+      - name: Validate each app.json against schema (draft 2020-12)
+        shell: bash
+        run: |
+          set -e
+          shopt -s nullglob
+          found=0
+          for manifest in apps/*/app.json; do
+            found=1
+            echo "::group::$manifest"
+            ajv validate --spec=draft2020 -c ajv-formats -s "$APP_SCHEMA" -d "$manifest" --strict=false
+            echo "::endgroup::"
+          done
+          if [ "$found" -eq 0 ]; then
+            echo "::error::no apps/*/app.json files found"
+            exit 1
+          fi
+
+      - name: Semantic checks (manifest, slug, icon, i18n)
+        run: bash .github/scripts/lint.sh
+
+      # Temporarily disabled during initial catalog construction — re-enable
+      # once manifests stabilise to enforce per-change version bumps.
+      # - name: Version bump check
+      #   if: github.event_name == 'pull_request'
+      #   env:
+      #     BASE_SHA: ${{ github.event.pull_request.base.sha }}
+      #   run: bash .github/scripts/check-version-bump.sh

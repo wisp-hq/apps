@@ -1,0 +1,6 @@
+{
+  "wiiu": {
+    "launcher": "cemu",
+    "extensions": [".wud", ".wux", ".wua", ".rpx", ".elf", ".iso"]
+  }
+}

@@ -1,0 +1,40 @@
+{
+  "$schema": "../app.schema.json",
+  "schemaVersion": 1,
+  "slug": "steam",
+  "version": "1.0.0",
+  "name": "Steam",
+  "description": "t:description",
+  "icon": "icon.svg",
+  "category": "launcher",
+  "container": {
+    "image": "lscr.io/linuxserver/steam:latest"
+  },
+  "volumes": [
+    {
+      "id": "config",
+      "label": "t:volumes.config.label",
+      "scope": "perUser",
+      "hostPath": "steam",
+      "containerPath": "/config",
+      "mode": "rw"
+    },
+    {
+      "id": "library",
+      "label": "t:volumes.library.label",
+      "scope": "shared",
+      "hostPath": "/data/shared/SteamLibrary",
+      "containerPath": "/config/.local/share/Steam/steamapps",
+      "mounts": [
+        { "name": "common",      "mode": "rw" },
+        { "name": "shadercache", "mode": "rw" }
+      ]
+    }
+  ],
+  "features": {
+    "shortcuts": {
+      "provider": "steam",
+      "containerPath": "/config/.local/share/Steam/steamapps"
+    }
+  }
+}

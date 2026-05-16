@@ -1,0 +1,31 @@
+{
+  "$schema": "../app.schema.json",
+  "schemaVersion": 1,
+  "slug": "lutris",
+  "version": "1.0.0",
+  "name": "Lutris",
+  "description": "t:description",
+  "icon": "icon.svg",
+  "category": "launcher",
+  "container": {
+    "image": "ghcr.io/wisp-hq/lutris:latest"
+  },
+  "volumes": [
+    {
+      "id": "config",
+      "label": "t:volumes.config.label",
+      "scope": "perUser",
+      "hostPath": "lutris",
+      "containerPath": "/config",
+      "mode": "rw"
+    },
+    {
+      "id": "games",
+      "label": "t:volumes.games.label",
+      "scope": "shared",
+      "hostPath": "/data/shared/lutris-games",
+      "containerPath": "/config/Games",
+      "mode": "rw"
+    }
+  ]
+}

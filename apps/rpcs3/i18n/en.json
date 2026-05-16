@@ -1,0 +1,5 @@
+{
+  "description": "PlayStation 3 emulator. Browse your PS3 library directly from the wisp shortcuts tab.",
+  "volumes.config.label": "User config, saves & states",
+  "volumes.roms.label": "ROMs library"
+}
