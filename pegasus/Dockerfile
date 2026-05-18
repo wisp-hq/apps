@@ -27,7 +27,6 @@ RUN \
     jq \
     libqt5gui5 \
     libqt5multimedia5 \
-    libqt5multimedia5-plugins \
     libqt5qml5 \
     libqt5quick5 \
     libqt5quickcontrols2-5 \
