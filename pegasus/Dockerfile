@@ -46,7 +46,17 @@ RUN \
     libretro-genesisplusgx \
     libretro-mgba \
     libretro-snes9x \
-    retroarch && \
+    retroarch \
+    unzip && \
+  CORES_DIR=/usr/lib/x86_64-linux-gnu/libretro && \
+  mkdir -p "${CORES_DIR}" && \
+  for core in fceumm mupen64plus_next pcsx_rearmed; do \
+    echo "** fetching ${core} from libretro buildbot" && \
+    curl -fSLo /tmp/core.zip \
+      "https://buildbot.libretro.com/nightly/linux/x86_64/latest/${core}_libretro.so.zip" && \
+    unzip -o /tmp/core.zip -d "${CORES_DIR}" && \
+    rm /tmp/core.zip; \
+  done && \
   echo "**** install Eden (Switch) ****" && \
   EDEN_VERSION="${EDEN_VERSION:-$(curl -fsSL https://git.eden-emu.dev/api/v1/repos/eden-emu/eden/releases/latest | jq -r '.tag_name')}" && \
   echo "Eden version: ${EDEN_VERSION}" && \
