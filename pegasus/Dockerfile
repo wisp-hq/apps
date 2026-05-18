@@ -4,7 +4,7 @@ FROM ghcr.io/linuxserver/baseimage-selkies:ubunturesolute
 
 ARG BUILD_DATE
 ARG VERSION
-ARG PEGASUS_DEB_URL=https://github.com/mmatyas/pegasus-frontend/releases/download/continuous/pegasus-frontend_0.16.97_amd64.deb
+ARG PEGASUS_DEB_URL
 ARG EDEN_VERSION
 ARG AZAHAR_VERSION
 ARG CEMU_VERSION
@@ -37,6 +37,8 @@ RUN \
     qml-module-qtquick-controls2 \
     qml-module-qtquick2 && \
   echo "**** install pegasus ****" && \
+  PEGASUS_DEB_URL="${PEGASUS_DEB_URL:-$(curl -fsSL https://api.github.com/repos/mmatyas/pegasus-frontend/releases/tags/continuous | jq -r '[.assets[] | select(.name | test("_amd64\\.deb$"))][0].browser_download_url')}" && \
+  echo "Pegasus deb: ${PEGASUS_DEB_URL}" && \
   curl -fSLo /tmp/pegasus.deb "${PEGASUS_DEB_URL}" && \
   apt-get install -y --no-install-recommends /tmp/pegasus.deb && \
   rm /tmp/pegasus.deb && \
