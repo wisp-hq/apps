@@ -43,11 +43,8 @@ RUN \
   rm /tmp/pegasus.deb && \
   echo "**** install retroarch + cores ****" && \
   apt-get install -y --no-install-recommends \
-    libretro-fceumm \
     libretro-genesisplusgx \
     libretro-mgba \
-    libretro-mupen64plus-next \
-    libretro-pcsx-rearmed \
     libretro-snes9x \
     retroarch && \
   echo "**** install Eden (Switch) ****" && \
