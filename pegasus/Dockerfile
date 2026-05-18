@@ -42,15 +42,10 @@ RUN \
   apt-get install -y --no-install-recommends /tmp/pegasus.deb && \
   rm /tmp/pegasus.deb && \
   echo "**** install retroarch + cores ****" && \
-  apt-get install -y --no-install-recommends \
-    libretro-genesisplusgx \
-    libretro-mgba \
-    libretro-snes9x \
-    retroarch \
-    unzip && \
+  apt-get install -y --no-install-recommends retroarch unzip && \
   CORES_DIR=/usr/lib/x86_64-linux-gnu/libretro && \
   mkdir -p "${CORES_DIR}" && \
-  for core in fceumm mupen64plus_next pcsx_rearmed; do \
+  for core in fceumm snes9x mgba genesis_plus_gx mupen64plus_next pcsx_rearmed; do \
     echo "** fetching ${core} from libretro buildbot" && \
     curl -fSLo /tmp/core.zip \
       "https://buildbot.libretro.com/nightly/linux/x86_64/latest/${core}_libretro.so.zip" && \
