@@ -1,0 +1,7 @@
+{
+  "description": "Client Steam. Bibliothèque partagée entre utilisateurs (premier lancement lourd — image de plusieurs Go à télécharger).",
+  "volumes.config.label": "Compte et paramètres",
+  "volumes.library-common.label": "Bibliothèque partagée — common",
+  "volumes.library-shadercache.label": "Bibliothèque partagée — cache de shaders",
+  "volumes.library-workshop.label": "Bibliothèque partagée — workshop"
+}

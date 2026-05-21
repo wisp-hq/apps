@@ -1,0 +1,5 @@
+{
+  "description": "Lanceur de jeux Linux avec la pile Wine préinstallée.",
+  "volumes.config.label": "Compte et paramètres",
+  "volumes.games.label": "Bibliothèque de jeux"
+}

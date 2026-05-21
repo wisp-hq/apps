@@ -1,0 +1,5 @@
+{
+  "description": "Frontend d'émulation multi-plateforme. ROMs partagées ; collections et configuration par utilisateur.",
+  "volumes.config.label": "Configuration utilisateur",
+  "volumes.roms.label": "Bibliothèque de ROMs"
+}

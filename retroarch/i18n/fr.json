@@ -1,0 +1,9 @@
+{
+  "description": "Frontend pour émulateurs. ROMs, cores et configurations partagés ; sauvegardes et états par utilisateur.",
+  "volumes.config.label": "Configuration utilisateur, sauvegardes et états",
+  "volumes.roms.label": "Bibliothèque de ROMs",
+  "volumes.assets-cores.label": "Cores partagés",
+  "volumes.assets-autoconfig.label": "Autoconfig partagée",
+  "volumes.assets-config.label": "Configuration partagée",
+  "volumes.assets-system.label": "Fichiers système partagés"
+}
