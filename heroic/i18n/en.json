@@ -1,0 +1,5 @@
+{
+  "description": "Epic / GOG / Amazon Games launcher.",
+  "volumes.config.label": "Account & settings",
+  "volumes.games.label": "Games library"
+}

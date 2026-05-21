@@ -1,27 +1,31 @@
 {
   "$schema": "../wisp.schema.json",
+  "schemaVersion": 1,
   "slug": "pegasus",
+  "version": "1.0.0",
   "name": "Pegasus",
-  "description": "Cross-platform emulation frontend. ROMs shared; collections and config per user.",
-  "image": "ghcr.io/wisp-hq/pegasus:latest",
+  "description": "t:description",
   "icon": "icon.svg",
-  "mountFields": [
+  "container": {
+    "image": "ghcr.io/wisp-hq/pegasus:latest",
+    "env": { "TZ": "Europe/Paris" }
+  },
+  "volumes": [
     {
-      "key": "config",
-      "label": "User config",
+      "id": "config",
+      "label": "t:volumes.config.label",
       "scope": "perUser",
-      "placeholder": "pegasus",
-      "mounts": [{ "containerPath": "/config", "mode": "rw" }],
-      "advanced": true
+      "hostPath": "pegasus",
+      "containerPath": "/config",
+      "mode": "rw"
     },
     {
-      "key": "roms",
-      "label": "ROMs library",
-      "description": "Generic ROMs library, read-only. Point at the same dir other emulators use.",
+      "id": "roms",
+      "label": "t:volumes.roms.label",
       "scope": "shared",
-      "placeholder": "/data/shared/roms",
-      "mounts": [{ "containerPath": "/config/roms", "mode": "ro" }]
+      "hostPath": "/data/shared/roms",
+      "containerPath": "/config/roms",
+      "mode": "ro"
     }
-  ],
-  "defaultEnvVars": { "TZ": "Europe/Paris" }
+  ]
 }

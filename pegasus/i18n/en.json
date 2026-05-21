@@ -1,0 +1,5 @@
+{
+  "description": "Cross-platform emulation frontend. ROMs shared; collections and config per user.",
+  "volumes.config.label": "User config",
+  "volumes.roms.label": "ROMs library"
+}

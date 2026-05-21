@@ -1,35 +1,53 @@
 {
   "$schema": "../wisp.schema.json",
+  "schemaVersion": 1,
   "slug": "steam",
+  "version": "1.0.0",
   "name": "Steam",
-  "description": "Steam client. Library shared across users (heavy first launch — pulls a multi-GB image).",
-  "image": "lscr.io/linuxserver/steam:latest",
+  "description": "t:description",
   "icon": "icon.svg",
-  "mountFields": [
+  "container": {
+    "image": "lscr.io/linuxserver/steam:latest",
+    "env": { "TZ": "Europe/Paris" }
+  },
+  "volumes": [
     {
-      "key": "config",
-      "label": "Account & settings",
+      "id": "config",
+      "label": "t:volumes.config.label",
       "scope": "perUser",
-      "placeholder": "steam",
-      "mounts": [{ "containerPath": "/config", "mode": "rw" }],
-      "advanced": true
+      "hostPath": "steam",
+      "containerPath": "/config",
+      "mode": "rw"
     },
     {
-      "key": "library",
-      "label": "Steam library",
-      "description": "Root of a Steam library — only common/, shadercache/ and workshop/ are mounted into the container.",
+      "id": "library-common",
+      "label": "t:volumes.library-common.label",
       "scope": "shared",
-      "placeholder": "/data/shared/SteamLibrary",
-      "mounts": [
-        { "suffix": "common", "containerPath": "/config/.local/share/Steam/steamapps/common", "mode": "rw" },
-        { "suffix": "shadercache", "containerPath": "/config/.local/share/Steam/steamapps/shadercache", "mode": "rw" },
-        { "suffix": "workshop", "containerPath": "/config/.local/share/Steam/steamapps/workshop", "mode": "rw" }
-      ]
+      "hostPath": "/data/shared/SteamLibrary/common",
+      "containerPath": "/config/.local/share/Steam/steamapps/common",
+      "mode": "rw"
+    },
+    {
+      "id": "library-shadercache",
+      "label": "t:volumes.library-shadercache.label",
+      "scope": "shared",
+      "hostPath": "/data/shared/SteamLibrary/shadercache",
+      "containerPath": "/config/.local/share/Steam/steamapps/shadercache",
+      "mode": "rw"
+    },
+    {
+      "id": "library-workshop",
+      "label": "t:volumes.library-workshop.label",
+      "scope": "shared",
+      "hostPath": "/data/shared/SteamLibrary/workshop",
+      "containerPath": "/config/.local/share/Steam/steamapps/workshop",
+      "mode": "rw"
     }
   ],
-  "defaultEnvVars": { "TZ": "Europe/Paris" },
-  "shortcutProvider": {
-    "type": "steam",
-    "containerPath": "/config/.local/share/Steam/steamapps"
+  "features": {
+    "shortcuts": {
+      "provider": "steam",
+      "containerPath": "/config/.local/share/Steam/steamapps"
+    }
   }
 }

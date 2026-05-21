@@ -4,88 +4,113 @@
   "title": "Wisp app manifest",
   "type": "object",
   "additionalProperties": false,
-  "required": ["slug", "name", "description", "image", "icon", "mountFields", "defaultEnvVars"],
+  "required": ["schemaVersion", "slug", "version", "name", "icon", "container"],
   "properties": {
     "$schema": { "type": "string" },
+
+    "schemaVersion": {
+      "type": "integer",
+      "const": 1,
+      "description": "Manifest format version. Bumped only on breaking changes."
+    },
     "slug": {
       "type": "string",
-      "pattern": "^[a-z0-9-]+$",
-      "description": "Must match the parent directory name."
+      "pattern": "^[a-z0-9][a-z0-9-]{1,62}$",
+      "description": "Stable identifier. Must match the parent directory name."
     },
-    "name": { "type": "string", "minLength": 1 },
-    "description": { "type": "string", "minLength": 1 },
-    "image": { "type": "string", "minLength": 1 },
-    "icon": { "type": "string", "minLength": 1 },
-    "mountFields": {
-      "type": "array",
-      "items": { "$ref": "#/$defs/mountField" }
+    "version": {
+      "type": "string",
+      "pattern": "^\\d+\\.\\d+\\.\\d+(?:-[0-9A-Za-z.-]+)?$",
+      "description": "Semver of this manifest. Bumped on every content change. Used to detect updates."
     },
-    "defaultEnvVars": {
-      "type": "object",
-      "additionalProperties": { "type": "string" }
+    "name": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Display name (untranslated; brand names stay as-is)."
     },
-    "shortcutProvider": { "$ref": "#/$defs/shortcutProvider" }
+    "description": {
+      "$ref": "#/$defs/translatableString",
+      "description": "Short blurb shown in the catalog."
+    },
+    "icon": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Icon file path relative to wisp.json (e.g. 'icon.png')."
+    },
+    "defaultLocale": {
+      "type": "string",
+      "pattern": "^[a-z]{2}(-[A-Z]{2})?$",
+      "default": "en",
+      "description": "BCP-47 source locale for i18n/<locale>.json files."
+    },
+
+    "container": { "$ref": "#/$defs/container" },
+    "volumes":   { "type": "array", "items": { "$ref": "#/$defs/volume" } },
+    "features":  { "$ref": "#/$defs/features" }
   },
+
   "$defs": {
-    "mountTarget": {
+    "translatableString": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Either a literal string or 't:<key>' resolved from i18n/<locale>.json."
+    },
+
+    "container": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["containerPath", "mode"],
+      "required": ["image"],
       "properties": {
-        "suffix": {
+        "image": {
           "type": "string",
-          "description": "Sub-path under the host path."
+          "minLength": 1,
+          "description": "OCI image reference (e.g. 'lscr.io/linuxserver/steam:latest')."
         },
-        "containerPath": {
+        "env": {
+          "type": "object",
+          "additionalProperties": { "type": "string" }
+        }
+      }
+    },
+
+    "volume": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "scope", "hostPath", "containerPath", "mode"],
+      "properties": {
+        "id": { "type": "string", "pattern": "^[a-z0-9][a-z0-9-]*$" },
+        "label": { "$ref": "#/$defs/translatableString" },
+        "scope": { "enum": ["shared", "perUser"] },
+        "hostPath": {
           "type": "string",
-          "pattern": "^/"
+          "minLength": 1,
+          "description": "Host path. For scope=perUser, Wisp appends a per-user subdir at session start."
         },
+        "containerPath": { "type": "string", "pattern": "^/" },
         "mode": { "enum": ["ro", "rw"] }
       }
     },
-    "mountField": {
+
+    "features": {
       "type": "object",
-      "additionalProperties": false,
-      "required": ["key", "label", "scope", "placeholder", "mounts"],
+      "additionalProperties": { "type": "object" },
+      "description": "Open feature map. Known features are typed below; unknown features pass through and emit a warning at load time.",
       "properties": {
-        "key": {
-          "type": "string",
-          "pattern": "^[a-z0-9-]+$"
-        },
-        "label": { "type": "string", "minLength": 1 },
-        "description": { "type": "string", "minLength": 1 },
-        "scope": { "enum": ["shared", "perUser"] },
-        "placeholder": { "type": "string", "minLength": 1 },
-        "mounts": {
-          "type": "array",
-          "minItems": 1,
-          "items": { "$ref": "#/$defs/mountTarget" }
-        },
-        "advanced": { "type": "boolean" }
+        "shortcuts": { "$ref": "#/$defs/featureShortcuts" }
       }
     },
-    "shortcutProvider": {
+
+    "featureShortcuts": {
       "type": "object",
-      "description": "Optional: lets Wisp scan installed games from this launcher and expose them as shortcuts on the home Library.",
+      "additionalProperties": false,
+      "required": ["provider", "containerPath"],
       "properties": {
-        "type": {
+        "provider": {
           "type": "string",
-          "enum": ["steam", "heroic", "lutris", "retroarch", "pegasus"],
-          "description": "Launcher backend Wisp uses to parse the library metadata."
+          "description": "Provider id (e.g. 'steam', 'heroic'). Unknown values disable the feature with a warning."
         },
-        "containerPath": {
-          "type": "string",
-          "pattern": "^/",
-          "description": "Absolute path inside the container where the launcher stores its library manifests (e.g. /config/.steam/steam/steamapps)."
-        },
-        "extra": {
-          "type": "object",
-          "additionalProperties": { "type": "string" },
-          "description": "Provider-specific options. Reserved for future use."
-        }
-      },
-      "required": ["type", "containerPath"],
-      "additionalProperties": false
+        "containerPath": { "type": "string", "pattern": "^/" }
+      }
     }
   }
 }

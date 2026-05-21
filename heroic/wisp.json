@@ -1,27 +1,31 @@
 {
   "$schema": "../wisp.schema.json",
+  "schemaVersion": 1,
   "slug": "heroic",
+  "version": "1.0.0",
   "name": "Heroic",
-  "description": "Epic / GOG / Amazon Games launcher.",
-  "image": "ghcr.io/wisp-hq/heroic:latest",
+  "description": "t:description",
   "icon": "icon.svg",
-  "mountFields": [
+  "container": {
+    "image": "ghcr.io/wisp-hq/heroic:latest",
+    "env": { "TZ": "Europe/Paris" }
+  },
+  "volumes": [
     {
-      "key": "config",
-      "label": "Account & settings",
+      "id": "config",
+      "label": "t:volumes.config.label",
       "scope": "perUser",
-      "placeholder": "heroic",
-      "mounts": [{ "containerPath": "/config", "mode": "rw" }],
-      "advanced": true
+      "hostPath": "heroic",
+      "containerPath": "/config",
+      "mode": "rw"
     },
     {
-      "key": "games",
-      "label": "Games library",
-      "description": "Shared install directory for Heroic-managed games.",
+      "id": "games",
+      "label": "t:volumes.games.label",
       "scope": "shared",
-      "placeholder": "/data/shared/heroic-games",
-      "mounts": [{ "containerPath": "/config/Games/Heroic", "mode": "rw" }]
+      "hostPath": "/data/shared/heroic-games",
+      "containerPath": "/config/Games/Heroic",
+      "mode": "rw"
     }
-  ],
-  "defaultEnvVars": { "TZ": "Europe/Paris" }
+  ]
 }

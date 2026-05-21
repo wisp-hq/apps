@@ -1,0 +1,65 @@
+name: Lint catalog
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+  workflow_call:
+    inputs:
+      schema-url:
+        description: URL of wisp.schema.json to validate against
+        required: false
+        default: https://raw.githubusercontent.com/wisp-hq/apps/main/wisp.schema.json
+        type: string
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - run: npm install -g ajv-cli ajv-formats
+
+      - name: Resolve schema
+        env:
+          SCHEMA_URL: ${{ inputs.schema-url || 'https://raw.githubusercontent.com/wisp-hq/apps/main/wisp.schema.json' }}
+        run: |
+          if [ -f wisp.schema.json ]; then
+            echo "SCHEMA=$PWD/wisp.schema.json" >> "$GITHUB_ENV"
+          else
+            curl -sSfL "$SCHEMA_URL" -o /tmp/wisp.schema.json
+            echo "SCHEMA=/tmp/wisp.schema.json" >> "$GITHUB_ENV"
+          fi
+
+      - name: Validate each wisp.json against schema (draft 2020-12)
+        shell: bash
+        run: |
+          set -e
+          shopt -s nullglob
+          found=0
+          for manifest in */wisp.json; do
+            found=1
+            echo "::group::$manifest"
+            ajv validate --spec=draft2020 -s "$SCHEMA" -d "$manifest" --strict=false
+            echo "::endgroup::"
+          done
+          if [ "$found" -eq 0 ]; then
+            echo "::error::no */wisp.json files found"
+            exit 1
+          fi
+
+      - name: Semantic checks (manifest, slug, icon, i18n)
+        run: bash .github/scripts/lint.sh
+
+      - name: Version bump check
+        if: github.event_name == 'pull_request'
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+        run: bash .github/scripts/check-version-bump.sh

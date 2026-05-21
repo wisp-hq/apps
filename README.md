@@ -35,7 +35,9 @@ Images we build are based on linuxserver.io's [`baseimage-selkies`](https://gith
    ```
 3. Add a `Dockerfile` in the same folder if the app needs a custom image; otherwise reference an upstream image directly in `wisp.json`.
 4. Append the slug to the `apps` array in `manifest.json`.
-5. Open a PR — CI validates the schema, checks slug/icon consistency, then builds and publishes any new `Dockerfile` to GHCR.
+5. If the manifest uses any `t:<key>` strings, add `i18n/en.json` (and optionally other locales). See [`docs/CONTRIBUTING.md`](docs/CONTRIBUTING.md) for the i18n convention.
+6. Bump `version` on every change — CI rejects PRs that modify a `wisp.json` without bumping it.
+7. Open a PR — CI validates the schema, checks slug/icon/i18n consistency, then builds and publishes any new `Dockerfile` to GHCR.
 
 ## Running your own catalog
 
@@ -45,15 +47,15 @@ Wisp lets users register additional catalog repos. To stand one up, mirror the l
 { "$schema": "https://raw.githubusercontent.com/wisp-hq/apps/main/wisp.schema.json" }
 ```
 
-Reuse the validation workflow as-is:
+Reuse the lint workflow as-is:
 
 ```yaml
-# .github/workflows/validate.yml
-name: Validate catalog
+# .github/workflows/lint.yml
+name: Lint catalog
 on: [push, pull_request]
 jobs:
-  validate:
-    uses: wisp-hq/apps/.github/workflows/validate.yml@main
+  lint:
+    uses: wisp-hq/apps/.github/workflows/lint.yml@main
 ```
 
 Then point Wisp at your repo's raw `manifest.json` URL and your apps appear alongside the built-in ones.
@@ -61,4 +63,4 @@ Then point Wisp at your repo's raw `manifest.json` URL and your apps appear alon
 ## CI
 
 - [`build.yml`](.github/workflows/build.yml) builds and publishes each image to GHCR (push to `main`, `v*` tags, weekly rebuild, manual dispatch).
-- [`validate.yml`](.github/workflows/validate.yml) validates the catalog on every PR and is also exposed as a reusable workflow.
+- [`lint.yml`](.github/workflows/lint.yml) validates the catalog (schema, slug/icon, i18n, version bump) on every PR and push, and is also exposed as a reusable workflow.

@@ -1,19 +1,23 @@
 {
   "$schema": "../wisp.schema.json",
+  "schemaVersion": 1,
   "slug": "firefox",
+  "version": "1.0.0",
   "name": "Firefox",
-  "description": "Web browser, sandboxed per user.",
-  "image": "ghcr.io/wisp-hq/firefox:latest",
+  "description": "t:description",
   "icon": "icon.svg",
-  "mountFields": [
+  "container": {
+    "image": "ghcr.io/wisp-hq/firefox:latest",
+    "env": { "TZ": "Europe/Paris" }
+  },
+  "volumes": [
     {
-      "key": "profile",
-      "label": "Profile",
+      "id": "profile",
+      "label": "t:volumes.profile.label",
       "scope": "perUser",
-      "placeholder": "firefox",
-      "mounts": [{ "containerPath": "/config", "mode": "rw" }],
-      "advanced": true
+      "hostPath": "firefox",
+      "containerPath": "/config",
+      "mode": "rw"
     }
-  ],
-  "defaultEnvVars": { "TZ": "Europe/Paris" }
+  ]
 }

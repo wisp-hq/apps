@@ -1,0 +1,9 @@
+{
+  "description": "Frontend for emulators. ROMs, cores and configs shared; saves and states per user.",
+  "volumes.config.label": "User config, saves & states",
+  "volumes.roms.label": "ROMs library",
+  "volumes.assets-cores.label": "Shared cores",
+  "volumes.assets-autoconfig.label": "Shared autoconfig",
+  "volumes.assets-config.label": "Shared config",
+  "volumes.assets-system.label": "Shared system files"
+}

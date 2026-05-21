@@ -1,0 +1,4 @@
+{
+  "description": "Web browser, sandboxed per user.",
+  "volumes.profile.label": "Profile"
+}
